@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>Gmail API demo</title>
+    <title>Gmail API List Messages</title>
     <meta charset="UTF-8">
 
     <link rel="stylesheet" href="css/bootstrap.min.css">
@@ -18,14 +18,23 @@
   </head>
   <body>
     <div class="container">
-      <h1>Gmail API demo</h1>
-
-      <a href="#compose-modal" data-toggle="modal" id="compose-button" class="btn btn-primary pull-right hidden">Compose</a>
+      <h1>Gmail API</h1>
 
       <button id="authorize-button" class="btn btn-primary hidden">Authorize</button>
-
+		
       <table class="table table-striped table-inbox hidden">
-      	<caption><input type="text" placeholder="Enter your Search Query" id="query"/> <button class="btn btn-primary pull-right" onclick="listMessages();">SEARCH</button></caption>
+      	<caption>
+	      	<div class="row">
+	  			<div class="col-lg-6">
+			      	<div class="input-group">
+			      	  <input type="text" class="form-control" placeholder="Enter your Search Query" id="query">
+				      <span class="input-group-btn">
+				        <button class="btn btn-secondary" type="button"  onclick="listMessages();">Go!</button>
+				      </span>	     
+				    </div>
+				</div>
+	      	</div>
+      	</caption>
         <thead>
           <tr>
             <th>From</th>
