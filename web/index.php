@@ -104,8 +104,7 @@
 
     <script src="js/jquery-2.2.4.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
-    <script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
     <script src="js/options.js"></script>
-    
+    <script src="https://apis.google.com/js/client.js?onload=handleClientLoad"></script>
   </body>
 </html>
