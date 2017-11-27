@@ -51,8 +51,9 @@ function listMessages( ) {
 	}
 	var getPageOfMessages = function(request, result) {
 		request.execute(function(resp) {
-			result = result.concat(resp.messages);
+			result = resp.messages;
 			var nextPageToken = resp.nextPageToken;
+			callback(result);
 			if (nextPageToken) {
 				request = gapi.client.gmail.users.messages.list({
 					'userId': userId,
@@ -60,8 +61,6 @@ function listMessages( ) {
 					'q': query
 				});
 				getPageOfMessages(request, result);
-			} else {
-				callback(result);
 			}
 		});
 	};
@@ -73,7 +72,11 @@ function listMessages( ) {
 }
 function loadAllMessages(result){
 	$.each(result,function(index, message){
-		appendMessageRow(message);
+		var messageRequest = gapi.client.gmail.users.messages.get({
+			'userId': 'me',
+			'id': this.id
+		});
+		messageRequest.execute(appendMessageRow);
 	})
 }
 function appendMessageRow(message) {
