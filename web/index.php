@@ -25,6 +25,7 @@
       <button id="authorize-button" class="btn btn-primary hidden">Authorize</button>
 
       <table class="table table-striped table-inbox hidden">
+      	<caption><input type="text" placeholder="Enter your Search Query" id="query"/> <button class="btn btn-primary pull-right" onclick="listMessages();">SEARCH</button></caption>
         <thead>
           <tr>
             <th>From</th>

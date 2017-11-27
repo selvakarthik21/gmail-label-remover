@@ -1,8 +1,7 @@
 var clientId = '118625724860-lf6mgu8bu61npvv9e2a6jp7o3tkars1p.apps.googleusercontent.com';
 var apiKey = 'AIzaSyCnvRHxn9BKaUyvREdRJgXtBYZ4Cj4BZjw';
-var scopes =
-    'https://www.googleapis.com/auth/gmail.readonly '+
-    'https://www.googleapis.com/auth/gmail.send';
+var scopes = 'https://www.googleapis.com/auth/gmail.modify';
+const userId = 'me';
 function handleClientLoad() {
 	gapi.client.setApiKey(apiKey);
 	window.setTimeout(checkAuth, 1);
@@ -39,20 +38,43 @@ function loadGmailApi() {
 	gapi.client.load('gmail', 'v1', displayInbox);
 }
 function displayInbox() {
-	var request = gapi.client.gmail.users.messages.list({
-		'userId': 'me',
-		'labelIds': 'INBOX',
-		'maxResults': 10
-	});
-	request.execute(function(response) {
-		$.each(response.messages, function() {
-			var messageRequest = gapi.client.gmail.users.messages.get({
-				'userId': 'me',
-				'id': this.id
-			});
-			messageRequest.execute(appendMessageRow);
+	
+}
+function listMessages( ) {
+	var callback = loadAllMessages;
+	handleClientLoad();
+	$('.table-inbox tbody').empty();
+	var query = $.trim($('#query').val());
+	if(query.length  < 1){
+		alert('Please enter the Search query');
+		return;
+	}
+	var getPageOfMessages = function(request, result) {
+		request.execute(function(resp) {
+			result = result.concat(resp.messages);
+			var nextPageToken = resp.nextPageToken;
+			if (nextPageToken) {
+				request = gapi.client.gmail.users.messages.list({
+					'userId': userId,
+					'pageToken': nextPageToken,
+					'q': query
+				});
+				getPageOfMessages(request, result);
+			} else {
+				callback(result);
+			}
 		});
+	};
+	var initialRequest = gapi.client.gmail.users.messages.list({
+		'userId': userId,
+		'q': query
 	});
+	getPageOfMessages(initialRequest, []);
+}
+function loadAllMessages(result){
+	$.each(result,function(index, message){
+		appendMessageRow(message);
+	})
 }
 function appendMessageRow(message) {
 	$('.table-inbox tbody').append(
@@ -163,7 +185,7 @@ function sendMessage(headers_obj, message, callback)
 		email += header += ": "+headers_obj[header]+"\r\n";
 	email += "\r\n" + message;
 	var sendRequest = gapi.client.gmail.users.messages.send({
-		'userId': 'me',
+		'userId': userId,
 		'resource': {
 			'raw': window.btoa(email).replace(/\+/g, '-').replace(/\//g, '_')
 		}
