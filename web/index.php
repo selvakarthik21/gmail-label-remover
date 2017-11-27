@@ -29,7 +29,7 @@
 			      	<div class="input-group">
 			      	  <input type="text" class="form-control" placeholder="Enter your Search Query" id="query">
 				      <span class="input-group-btn">
-				        <button class="btn btn-secondary" type="button" id="RemoveLabels">Remove Labels!</button>
+				        <button class="btn btn-secondary" type="button" id="RemoveLabels">List Message</button>
 				      </span>	     
 				    </div>
 				</div>
@@ -39,7 +39,7 @@
           <tr>
             <th>From</th>
             <th>Subject</th>
-            <th>Tagged Labels</th>
+            <th>Tagged Labels By User</th>
           </tr>
         </thead>
         <tbody></tbody>
