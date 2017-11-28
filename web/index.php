@@ -1,3 +1,5 @@
+<META HTTP-EQUIV="PRAGMA" CONTENT="NO-CACHE">  
+<meta http-equiv="Expires" content="Mon, 01 Jan 1990 12:00:00 GMT">
 <!doctype html>
 <html>
   <head>
@@ -39,7 +41,7 @@
           <tr>
             <th>From</th>
             <th>Subject</th>
-            <th>Tagged Labels By User</th>
+            <th>Tagged Labels</th>
           </tr>
         </thead>
         <tbody></tbody>
