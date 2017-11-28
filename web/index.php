@@ -23,7 +23,7 @@
       <h1>Gmail API</h1>
 
       <button id="authorize-button" class="btn btn-primary hidden">Authorize</button>
-		
+			
       <table class="table table-striped table-inbox hidden">
       	<caption>
 	      	<div class="row">
@@ -42,6 +42,7 @@
             <th>From</th>
             <th>Subject</th>
             <th>Tagged Labels</th>
+            <th>Removed Labels</th>
           </tr>
         </thead>
         <tbody></tbody>
