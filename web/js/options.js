@@ -1,4 +1,4 @@
-var clientId = '118625724860-n8c0boretdtmrlqm2tmtofv8kjrf9rcb.apps.googleusercontent.com';
+var clientId = '118625724860-lf6mgu8bu61npvv9e2a6jp7o3tkars1p.apps.googleusercontent.com';
 var apiKey = 'AIzaSyCnvRHxn9BKaUyvREdRJgXtBYZ4Cj4BZjw';
 var scopes =
 	'https://www.googleapis.com/auth/gmail.readonly '+
