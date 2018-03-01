@@ -1,9 +1,60 @@
-var clientId = '118625724860-lf6mgu8bu61npvv9e2a6jp7o3tkars1p.apps.googleusercontent.com';
+var clientId = '118625724860-n8c0boretdtmrlqm2tmtofv8kjrf9rcb.apps.googleusercontent.com';
 var apiKey = 'AIzaSyCnvRHxn9BKaUyvREdRJgXtBYZ4Cj4BZjw';
-var scopes =
-	'https://www.googleapis.com/auth/gmail.readonly '+
-	'https://www.googleapis.com/auth/gmail.send';
+var scopes = 'https://www.googleapis.com/auth/gmail.modify';
+var userId = 'me';
+var userLabel = {};
+var toBeRemovedLabels = [];
+var toBeRemovedLabelIds = [];
+var lastMessageId;
+var repeatInterval = 5 * 60 * 1000;
+var repeatProcess = setInterval(listMessages, repeatInterval);
+
+
+$(document).ready(function(){
+	$('#RemoveLabels').click(listMessages);
+	$('#interval').change(function(event){
+		var val = $(this).val();
+		val = (null == val || isNaN(val) || val < 1) ? 5 : val;
+		$(this).val(val);
+		val *= 60 * 1000;
+		clearInterval(repeatProcess);
+		repeatProcess = setInterval(listMessages, val);
+		
+	});
+	$('#query').keyup(function(event){
+		if(event.keyCode == 13) {
+			event.preventDefault();
+			listMessages();
+			return false;
+		}
+		var query = $(this).val();
+		var textLabels = [];
+		$.each(query.split(" "), function(index, element){
+			var text = element || "";
+			text = $.trim(text).toLowerCase();
+			if(text.indexOf('label:') > -1 ){
+				var value = text.replace(/label\:/gi,'');
+				for(var key in userLabel){
+					if(key.toLowerCase().replace(/[^a-z0-9]/gi,'') == value.replace(/[^a-z0-9]/gi,'') && textLabels.indexOf(key) == -1){
+						textLabels.push(key);
+						break;
+					}
+				}
+			}
+		});
+		$('.labelsToBeRemoved').empty();
+		if(textLabels.length > 0){				
+			$.each(textLabels,function(){
+				var labelText = '<button disabled class="btn btn-secondary" type="button" style="margin-top: 5px;">'+this+'</button> &nbsp;&nbsp;&nbsp;&nbsp;';
+				if(this != ""){
+					$('.labelsToBeRemoved').append(labelText);
+				}					
+			});
+		}
+	});
+})
 function handleClientLoad() {
+	console.log('hi');
 	gapi.client.setApiKey(apiKey);
 	window.setTimeout(checkAuth, 1);
 }
@@ -36,140 +87,135 @@ function handleAuthResult(authResult) {
 	}
 }
 function loadGmailApi() {
-	gapi.client.load('gmail', 'v1', displayInbox);
+	gapi.client.load('gmail', 'v1', listLabels);
 }
-function displayInbox() {
-	var request = gapi.client.gmail.users.messages.list({
-		'userId': 'me',
-		'labelIds': 'INBOX',
-		'maxResults': 10
+function listLabels() {
+	var request = gapi.client.gmail.users.labels.list({
+		'userId': userId
 	});
-	request.execute(function(response) {
-		$.each(response.messages, function() {
-			var messageRequest = gapi.client.gmail.users.messages.get({
-				'userId': 'me',
-				'id': this.id
-			});
-			messageRequest.execute(appendMessageRow);
-		});
+	request.execute(function(resp) {
+		var labels = resp.labels;
+		$.each(labels, function(index, label){
+			if('user' == label.type){
+				userLabel[label.name] = label.id;
+			}
+		})
 	});
 }
-function appendMessageRow(message) {
-	$('.table-inbox tbody').append(
-			'<tr>\
-			<td>'+getHeader(message.payload.headers, 'From')+'</td>\
-			<td>\
-			<a href="#message-modal-' + message.id +
-			'" data-toggle="modal" id="message-link-' + message.id+'">' +
-			getHeader(message.payload.headers, 'Subject') +
-			'</a>\
-			</td>\
-			<td>'+getHeader(message.payload.headers, 'Date')+'</td>\
-			</tr>'
-	);
-	var reply_to = (getHeader(message.payload.headers, 'Reply-to') !== '' ?
-			getHeader(message.payload.headers, 'Reply-to') :
-				getHeader(message.payload.headers, 'From')).replace(/\"/g, '&quot;');
-	var reply_subject = 'Re: '+getHeader(message.payload.headers, 'Subject').replace(/\"/g, '&quot;');
-	$('body').append(
-			'<div class="modal fade" id="message-modal-' + message.id +
-			'" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">\
-			<div class="modal-dialog modal-lg">\
-			<div class="modal-content">\
-			<div class="modal-header">\
-			<button type="button"\
-			class="close"\
-			data-dismiss="modal"\
-			aria-label="Close">\
-			<span aria-hidden="true">&times;</span></button>\
-			<h4 class="modal-title" id="myModalLabel">' +
-			getHeader(message.payload.headers, 'Subject') +
-			'</h4>\
-			</div>\
-			<div class="modal-body">\
-			<iframe id="message-iframe-'+message.id+'" srcdoc="<p>Loading...</p>">\
-			</iframe>\
-			</div>\
-			<div class="modal-footer">\
-			<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>\
-			<button type="button" class="btn btn-primary reply-button" data-dismiss="modal" data-toggle="modal" data-target="#reply-modal"\
-			onclick="fillInReply(\
-			\''+reply_to+'\', \
-			\''+reply_subject+'\', \
-			\''+getHeader(message.payload.headers, 'Message-ID')+'\'\
-			);"\
-			>Reply</button>\
-			</div>\
-			</div>\
-			</div>\
-			</div>'
-	);
-	$('#message-link-'+message.id).on('click', function(){
-		var ifrm = $('#message-iframe-'+message.id)[0].contentWindow.document;
-		$('body', ifrm).html(getBody(message.payload));
-	});
-}
-function sendEmail()
-{
-	$('#send-button').addClass('disabled');
-	sendMessage(
-			{
-				'To': $('#compose-to').val(),
-				'Subject': $('#compose-subject').val()
-			},
-			$('#compose-message').val(),
-			composeTidy
-	);
-	return false;
-}
-function composeTidy()
-{
-	$('#compose-modal').modal('hide');
-	$('#compose-to').val('');
-	$('#compose-subject').val('');
-	$('#compose-message').val('');
-	$('#send-button').removeClass('disabled');
-}
-function sendReply()
-{
-	$('#reply-button').addClass('disabled');
-	sendMessage(
-			{
-				'To': $('#reply-to').val(),
-				'Subject': $('#reply-subject').val(),
-				'In-Reply-To': $('#reply-message-id').val()
-			},
-			$('#reply-message').val(),
-			replyTidy
-	);
-	return false;
-}
-function replyTidy()
-{
-	$('#reply-modal').modal('hide');
-	$('#reply-message').val('');
-	$('#reply-button').removeClass('disabled');
-}
-function fillInReply(to, subject, message_id)
-{
-	$('#reply-to').val(to);
-	$('#reply-subject').val(subject);
-	$('#reply-message-id').val(message_id);
-}
-function sendMessage(headers_obj, message, callback)
-{
-	var email = '';
-	for(var header in headers_obj)
-		email += header += ": "+headers_obj[header]+"\r\n";
-	email += "\r\n" + message;
-	var sendRequest = gapi.client.gmail.users.messages.send({
-		'userId': 'me',
-		'resource': {
-			'raw': window.btoa(email).replace(/\+/g, '-').replace(/\//g, '_')
+function listMessages( ) {
+	lastMessageId = null;
+	var callback = loadAllMessages;
+	handleClientLoad();
+	$('.table-inbox tbody').empty();
+	toBeRemovedLabels = [];
+	toBeRemovedLabelIds = [];
+	var query = $.trim($('#query').val());
+	if(query.length  < 1){
+		alert('Please enter the Search query');
+		return;
+	}
+	$('.loader').show();
+	$.each(query.split(" "), function(index, element){
+		var text = element || "";
+		text = $.trim(text).toLowerCase();
+		if(text.indexOf('label:') > -1 ){
+			var value = text.replace(/label\:/gi,'');
+			for(var key in userLabel){
+				if(key.toLowerCase().replace(/[^a-z0-9]/gi,'') == value.replace(/[^a-z0-9]/gi,'') && toBeRemovedLabels.indexOf(key) == -1){
+					toBeRemovedLabels.push(key);
+					toBeRemovedLabelIds.push(userLabel[key]);
+					break;
+				}
+			}		
 		}
 	});
-	return sendRequest.execute(callback);
+	var getPageOfMessages = function(request, result) {
+		request.execute(function(resp) {
+			result = resp.messages;
+			var nextPageToken = resp.nextPageToken;
+			callback(result);
+			if (nextPageToken) {
+				request = gapi.client.gmail.users.messages.list({
+					'userId': userId,
+					'pageToken': nextPageToken,
+					'q': query
+				});
+				getPageOfMessages(request, result);
+			} else {
+				lastMessageId = result[result.length-1].id;
+			}
+		});
+	};
+	var initialRequest = gapi.client.gmail.users.messages.list({
+		'userId': userId,
+		'q': query
+	});
+	getPageOfMessages(initialRequest, []);
 }
+function loadAllMessages(result){
+	$.each(result,function(index, message){
+		var messageRequest = gapi.client.gmail.users.messages.get({
+			'userId': 'me',
+			'id': this.id
+		});
+		if(toBeRemovedLabelIds.length > 0){
+			messageRequest.execute(function(message){
+				removeLabel(message, message.payload);
+			});
+		} else {
+			messageRequest.execute(function(message){
+				appendMessageRow(message, message.payload);
+			});
+		}
+		
+	});
+	if(null == result || result.length == 0){
+		appendNoData();
+	}
+}
+function removeLabel(message, payload) {
+	var request = gapi.client.gmail.users.messages.modify({
+		'userId': userId,
+		'id': message.id,
+		'removeLabelIds': toBeRemovedLabelIds
+	});
+	request.execute(function(message){
+		appendMessageRow(message, payload);
+	});
+}
+function appendNoData(){
+	$('.table-inbox tbody').empty();
+	var colLength = $('.table-inbox thead th').length;
+	$('.table-inbox tbody').append(
+			'<tr>\
+			<td colspan="'+colLength+'" style="text-align:center;"> No Data Available</td>\
+			</tr>'
+	);
+	$('.loader').hide();
+}
+function appendMessageRow(message, payload) {
+	var  taggedLabels = [];
+	$.each(message.labelIds, function(index, availableLabelId){
+		//console.log(availableLabelId);
+		//console.log(userLabel.getKeyByValue(availableLabelId));
+		var labelName = userLabel.getKeyByValue(availableLabelId) || availableLabelId;
+		//console.log(labelName);
+		taggedLabels.push(labelName);
+	})
+	$('.table-inbox tbody').append(
+			'<tr>\
+			<td>'+getHeader(payload.headers, 'From')+'</td>\
+			<td>'+getHeader(payload.headers, 'Subject') +'</td>\
+			<td>'+taggedLabels.toString()+'</td>\
+			<td>'+toBeRemovedLabels.toString()+'</td>\
+			</tr>'
+	);
+	if(lastMessageId == message.id){
+		$('.loader').hide();
+		lastMessageId = null;
+	}
+}
+
 function getHeader(headers, index) {
 	var header = '';
 	$.each(headers, function(){
@@ -209,3 +255,17 @@ function getHTMLPart(arr) {
 	}
 	return '';
 }
+/**
+ * Get Key By Value
+ */
+Object.defineProperty(Object.prototype, 'getKeyByValue',{
+	value : function( value ) {
+	    for( var prop in this ) {
+	        if( this.hasOwnProperty( prop ) ) {
+	             if( this[ prop ] === value )
+	                 return prop;
+	        }
+	    }
+	},
+	enumerable : false
+});
